@@ -9,7 +9,7 @@ use URI::QueryParam qw//;
 use Carp qw//;
 use base qw/Class::Accessor/;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 # profiles currently supported by the W3C CSS Validator
 our %PROFILES = map { $_ => 1 } qw/none css1 css2 css3 svg svgbasic
@@ -301,7 +301,7 @@ been specified.
 
 The desired language of the supposedly human-readable messages. The string will
 passed as an C<Accept-Language> header in the HTTP request. The CSS Validator
-currently supports C<en>, C<de>, C<fr>, C<ja>, C<nl>, <zh>, and <zh-cn>.
+currently supports C<en>, C<de>, C<fr>, C<ja>, C<nl>, C<zh>, and C<zh-cn>.
 
 =back
 
