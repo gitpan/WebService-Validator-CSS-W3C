@@ -2,17 +2,17 @@ package WebService::Validator::CSS::W3C;
 use strict;
 use warnings;
 
-use SOAP::Lite;
+use SOAP::Lite 0.65;
 use LWP::UserAgent qw//;
 use URI qw//;
 use URI::QueryParam qw//;
 use Carp qw//;
 use base qw/Class::Accessor/;
 
-our $VERSION = "0.02";
+our $VERSION = "0.1";
 
 # profiles currently supported by the W3C CSS Validator
-our %PROFILES = map { $_ => 1 } qw/none css1 css2 css3 svg svgbasic
+our %PROFILES = map { $_ => 1 } qw/none css1 css2 css21 css3 svg svgbasic
                                    svgtiny mobile atsc-tv tv/;
 
 # user media currently supported by the W3C CSS Validator
@@ -64,22 +64,6 @@ sub _handle_response
     
     local $_ = $res->content;
     
-    # workaround for http://www.w3.org/Bugs/Public/show_bug.cgi?id=751
-    # workaround for http://www.w3.org/Bugs/Public/show_bug.cgi?id=757
-    return 0 if /<html/ || not m{http://www.w3.org/2003/05/soap-envelope};
-    
-    # workaround for SOAP::Lite's lack of support for SOAP 1.2
-    s{xmlns:env="http://www.w3.org/2003/05/soap-envelope"}
-     {xmlns:env="http://www.w3.org/2001/06/soap-envelope"};
-
-    # workaround for SOAP::Lite's lack of support for SOAP 1.2
-    s{env:encodingStyle="http://www.w3.org/2003/05/soap-encoding"}
-     {env:encodingStyle="http://www.w3.org/2001/06/soap-encoding"};
-
-    # workaround for http://www.w3.org/Bugs/Public/show_bug.cgi?id=750
-    s{<m:errortype><m:errorsubtype>unrecognized</m:errorsubtype>\s+<m:skippedstring>}
-     {<m:errortype><m:errorsubtype>unrecognized</m:errorsubtype></m:errortype><m:skippedstring>};
-
     my $som;
     eval { $som = SOAP::Deserializer->new->deserialize($_); };
 
@@ -99,7 +83,11 @@ sub _handle_response
     if ($som->match("/Envelope/Body/cssvalidationresponse")) {
         $self->{'success'} = 1;
     }
-    
+    # if the response was a SOAP fault
+    elsif ($som->match("/Envelope/Body/Fault")) {
+        $self->{'success'} = 0; 
+    }
+        
     # return whether the response was successfully processed
     return $self->{'success'};
 }
@@ -150,7 +138,7 @@ sub validate
         }
     }
     
-    # request experimental SOAP 1.2 output
+    # request SOAP 1.2 output
     $uri->query_param(output => "soap12");
     
     # memorize request uri
@@ -208,6 +196,23 @@ sub warnings
     return $som->valueof("//warning");
 }
 
+sub errorcount
+{
+    my $self = shift;
+    my $som = $self->som;
+    
+    return () unless defined $som;
+    return $som->valueof("//errorcount");
+}
+
+sub warningcount
+{
+    my $self = shift;
+    my $som = $self->som;
+    
+    return () unless defined $som;
+    return $som->valueof("//warningcount");
+}
 
 1;
 
@@ -235,9 +240,9 @@ WebService::Validator::CSS::W3C - Interface to the W3C CSS Validator
 
 =head1 DESCRIPTION
 
-This module is an experimental interface to the W3C CSS Validation online
-service L<http://jigsaw.w3.org/css-validator/>, based on its experimental
-SOAP 1.2 support. It helps to find errors in Cascading Style Sheets.
+This module is an  interface to the W3C CSS Validation online service 
+L<http://jigsaw.w3.org/css-validator/>, based on its SOAP 1.2 support. 
+It helps to find errors in Cascading Style Sheets.
 
 The following methods are available:
 
@@ -284,7 +289,7 @@ had been specified.
 
 =item profile => "css3"
 
-The CSS Version or profile to validate against, legal values are C<css1>, C<css2>,
+The CSS Version or profile to validate against, legal values are C<css1>, C<css2>, C<css21>,
 C<css3>, C<svg>, C<svgbasic>, C<svgtiny>, C<mobile>, C<atsc-tv>, and C<tv>. A special
 value C<none> can also be used. The default is C<undef> in which case the CSS Validator
 determines a default. This would currently behave as if C<css2> had been specified.
@@ -314,6 +319,11 @@ Same as the return value of C<validate()>.
 Returns a true value if the last attempt to C<validate()> succeeded and the
 validator reported no errors in the style sheet.
 
+=item my $num_errors = $val->errorcount
+
+returns the number of errors found for the checked style sheet. 
+Get the details of the errors with $val->errors (see below).
+
 =item my @errors = $val->errors
 
 Returns a list with information about the errors found for the
@@ -328,6 +338,11 @@ synopsis would currently return something like
     message    => 'not-a-color is not a color value',
     line       => 0,
   } )
+
+=item my $num_warnings = $val->warningcount
+
+returns the number of warnings found for the checked style sheet. 
+Get the details of each warning with $val->warnings (see below).
 
 
 =item my @warnings = $val->warnings
@@ -382,9 +397,8 @@ return value of C<validate()> or C<success()> before using the object.
 
 =head1 BUGS
 
-The SOAP 1.2 interface is highly experimental and thus likely to change, same
-goes thus for this module. There are also numerous bugs in the SOAP interface,
-those are tracked via W3C's Bugzilla, L<http://www.w3.org/Bugs/Public/>.
+This module uses the SOAP interface for the W3C CSS validatom, which still 
+has a number of bugs, tracked via W3C's Bugzilla, L<http://www.w3.org/Bugs/Public/>.
 
 Please report bugs in the W3C CSS Validator to L<www-validator-css@w3.org> or
 enter them directly in Bugzilla (see above). Please report bugs in this module
@@ -392,9 +406,9 @@ via RT, L<http://rt.cpan.org/>.
 
 =head1 NOTE
 
-This module is not in any way associated with the W3C and please remember
-that the CSS Validator is a shared resource so do not abuse it. You should
-sleep between requests and consider installing the Validator locally, see
+This module is not directly associated with the W3C. Please remember
+that the CSS Validator is a shared resource so do not abuse it: you should
+sleep between requests, and consider installing the Validator locally, see
 L<http://jigsaw.w3.org/css-validator/DOWNLOAD.html>.
 
 =head1 AUTHOR
