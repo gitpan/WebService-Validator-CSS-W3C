@@ -9,7 +9,7 @@ use URI::QueryParam qw//;
 use Carp qw//;
 use base qw/Class::Accessor/;
 
-our $VERSION = "0.1";
+our $VERSION = "0.2";
 
 # profiles currently supported by the W3C CSS Validator
 our %PROFILES = map { $_ => 1 } qw/none css1 css2 css21 css3 svg svgbasic

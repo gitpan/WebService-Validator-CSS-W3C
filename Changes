@@ -1,5 +1,9 @@
 Revision history for Perl extension WebService::Validator::CSS::W3C.
 
+0.2   Fri Jan 19 2007
+        - workaround for MacOSX tar adding resource files in the dist
+        
+
 0.1   Thu Jan 18 2007
         - removing workarounds for ill-formed soap output
         - requiring SOAP::Lite > 0.65
