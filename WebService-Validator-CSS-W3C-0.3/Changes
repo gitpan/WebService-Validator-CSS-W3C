@@ -1,8 +1,14 @@
 Revision history for Perl extension WebService::Validator::CSS::W3C.
 
+0.3   May 2013
+	- fix for http://cpants.cpanauthors.org/dist/WebService-Validator-CSS-W3C issues
+	- fix for https://rt.cpan.org/Public/Bug/Display.html?id=80710
+	- fix for https://rt.cpan.org/Public/Bug/Display.html?id=33040
+	- fix for https://rt.cpan.org/Public/Bug/Display.html?id=33039
+	- fix for https://rt.cpan.org/Public/Bug/Display.html?id=33038
+
 0.2   Fri Jan 19 2007
         - workaround for MacOSX tar adding resource files in the dist
-        
 
 0.1   Thu Jan 18 2007
         - removing workarounds for ill-formed soap output
